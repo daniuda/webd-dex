@@ -11,14 +11,11 @@ const { address, isConnected, isWrongNetwork, connecting, connect, switchNetwork
       <div class="header-inner">
         <RouterLink to="/" class="brand">
           <span class="brand-dot"></span>
-          <span class="brand-name">wWEBD<span class="brand-accent">DEX</span></span>
+          <span class="brand-name">WEBD<span class="brand-accent">DEX</span></span>
         </RouterLink>
 
         <nav class="site-nav">
-          <RouterLink to="/" class="nav-link">Swap</RouterLink>
-          <RouterLink to="/liquidity" class="nav-link">Liquidity</RouterLink>
-          <RouterLink to="/bridge" class="nav-link">Bridge</RouterLink>
-          <RouterLink to="/stats" class="nav-link">Stats</RouterLink>
+          <RouterLink to="/" class="nav-link">WEBD ↔ USDC</RouterLink>
         </nav>
 
         <div style="flex-shrink:0">
@@ -41,13 +38,9 @@ const { address, isConnected, isWrongNetwork, connecting, connect, switchNetwork
 
     <footer class="site-footer">
       <div class="footer-inner">
-        <p class="footer-brand">wWEBD<span class="brand-accent">DEX</span></p>
+        <p class="footer-brand">WEBD<span class="brand-accent">DEX</span></p>
         <p class="footer-copy">WebDollar ↔ USDC on Polygon · Non-custodial AMM</p>
         <div class="footer-links">
-          <RouterLink to="/" class="footer-link">Swap</RouterLink>
-          <RouterLink to="/liquidity" class="footer-link">Liquidity</RouterLink>
-          <RouterLink to="/bridge" class="footer-link">Bridge</RouterLink>
-          <RouterLink to="/stats" class="footer-link">Stats</RouterLink>
           <a href="https://webdollar.io" target="_blank" rel="noopener" class="footer-link">webdollar.io</a>
         </div>
       </div>

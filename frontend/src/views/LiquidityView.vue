@@ -25,12 +25,12 @@ onMounted(() => liq.load())
       <!-- ─── ADD TAB ─── -->
       <template v-if="tab === 'add'">
         <div class="panel">
-          <div class="input-label">wWEBD amount</div>
+          <div class="input-label">WEBD amount</div>
           <div class="input-row" style="margin-top:8px">
             <input class="token-input" type="number" min="0" placeholder="0.0"
               v-model="liq.amountWWEBDStr.value"
               @input="liq.syncUSDCFromWWEBD()" />
-            <div class="token-badge">wWEBD</div>
+            <div class="token-badge">WEBD</div>
           </div>
           <div class="balance-row" style="margin-top:6px">
             <span>Balance: {{ formatAmount(liq.wwwebdBalance.value, WWWEBD_DECIMALS, 4) }}</span>
@@ -62,7 +62,7 @@ onMounted(() => liq.load())
           <div v-if="liq.reserveWWEBD.value > 0n" class="info-row">
             <span>Pool rate</span>
             <span class="info-val">
-              1 wWEBD = {{ formatAmount(liq.reserveUSDC.value * 10n**BigInt(WWWEBD_DECIMALS) / (liq.reserveWWEBD.value || 1n), WWWEBD_DECIMALS, 4) }} USDC
+              1 WEBD = {{ formatAmount(liq.reserveUSDC.value * 10n**BigInt(WWWEBD_DECIMALS) / (liq.reserveWWEBD.value || 1n), WWWEBD_DECIMALS, 4) }} USDC
             </span>
           </div>
         </div>
@@ -84,7 +84,7 @@ onMounted(() => liq.load())
             <button v-if="liq.needsApproveWWEBD.value" class="btn btn-outline"
               :disabled="liq.loading.value" @click="liq.doApproveWWEBD()">
               <span v-if="liq.loading.value" class="spinner"></span>
-              Approve wWEBD
+              Approve WEBD
             </button>
             <button v-if="liq.needsApproveUSDC.value" class="btn btn-outline"
               :disabled="liq.loading.value" @click="liq.doApproveUSDC()">
@@ -126,7 +126,7 @@ onMounted(() => liq.load())
         </div>
 
         <div style="margin-top:20px">
-          <div class="input-label" style="margin-bottom:8px">Remove amount: {{ liq.removePct.value }}%</div>
+          <div class="input-label" style="margin-bottom:8px">Remove amount: {{ liq.removePctStr.value }}%</div>
           <input type="range" min="0" max="100" v-model="liq.removePctStr.value"
             style="width:100%;accent-color:var(--accent)" />
           <div style="display:flex;gap:8px;margin-top:10px">

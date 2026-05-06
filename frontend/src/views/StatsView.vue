@@ -1,10 +1,11 @@
 <script setup lang="ts">
+
 import { ref, onMounted, computed } from 'vue'
 import { getPairReserves, getPairLpSupply, WWWEBD_DECIMALS, USDC_DECIMALS } from '../services/dexApi'
 import { formatAmount } from '../utils/format'
 
-const wwwebdAddr = wwwebdAddr as string
-const routerAddr = routerAddr as string
+const wwwebdAddr = import.meta.env.VITE_WWWEBD_ADDRESS as string
+const routerAddr = import.meta.env.VITE_ROUTER_ADDRESS as string
 
 const reserveWWEBD = ref(0n)
 const reserveUSDC = ref(0n)
@@ -57,7 +58,7 @@ onMounted(async () => {
           <div style="font-size:28px;font-weight:700;color:var(--text-h)">${{ tvlUSD.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) }}</div>
         </div>
         <div class="card" style="text-align:center">
-          <div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:8px">wWEBD Price</div>
+          <div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:8px">WEBD Price</div>
           <div style="font-size:28px;font-weight:700;color:var(--accent)">${{ priceWWEBD.toFixed(6) }}</div>
         </div>
         <div class="card" style="text-align:center">
@@ -79,7 +80,7 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr>
-              <td><span class="token-badge" style="display:inline-flex">wWEBD</span></td>
+              <td><span class="token-badge" style="display:inline-flex">WEBD</span></td>
               <td>{{ formatAmount(reserveWWEBD, WWWEBD_DECIMALS, 2) }}</td>
               <td>${{ (Number(reserveWWEBD) / 1e18 * priceWWEBD).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) }}</td>
             </tr>
@@ -106,7 +107,7 @@ onMounted(async () => {
               </td>
             </tr>
             <tr>
-              <td style="color:var(--text-dim)">wWEBD</td>
+              <td style="color:var(--text-dim)">WEBD</td>
               <td>
                 <a :href="`https://polygonscan.com/address/${wwwebdAddr}`" target="_blank"
                   style="font-family:monospace;font-size:13px">{{ wwwebdAddr || '—' }}</a>

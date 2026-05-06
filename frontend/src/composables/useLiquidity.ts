@@ -140,6 +140,7 @@ export function useLiquidity() {
     reserveWWEBD, reserveUSDC, pairAddr, lpSupply, userLp,
     wwwebdBalance, usdcBalance, removeLP, removeWWEBD, removeUSDC,
     needsApproveWWEBD, needsApproveUSDC, userSharePct, userWWEBDInPool, userUSDCInPool,
+    amountWWEBDBig, amountUSDCBig, // expunem computed-urile pentru validare
     load, syncUSDCFromWWEBD, syncWWEBDFromUSDC,
     doApproveWWEBD, doApproveUSDC, doAddLiquidity, doRemoveLiquidity,
   }

@@ -1,0 +1,58 @@
+name: Deploy webd-dex Frontend To VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build --prefix frontend
+
+      - name: Archive dist
+        run: tar -czf webd-dex-dist.tar.gz -C frontend dist
+
+      - name: Configure SSH key
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload archive to VPS /tmp
+        shell: bash
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/deploy_key -P "${{ secrets.VPS_PORT || 22 }}" webd-dex-dist.tar.gz "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/webd-dex-dist.tar.gz"
+
+      - name: Extract archive and publish with sudo
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -p "${{ secrets.VPS_PORT || 22 }}" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" '
+            set -e
+            sudo mkdir -p /var/www/webd-dex
+            sudo tar -xzf /tmp/webd-dex-dist.tar.gz -C /tmp
+            sudo cp -r /tmp/dist/* /var/www/webd-dex/
+            sudo rm -rf /tmp/dist /tmp/webd-dex-dist.tar.gz
+            sudo nginx -t && sudo systemctl reload nginx || true
+          '

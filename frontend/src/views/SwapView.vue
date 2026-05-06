@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted } from 'vue'
 import { useSwap } from '../composables/useSwap'
 import { useWallet } from '../composables/useWallet'
@@ -19,11 +19,10 @@ function setMaxSell() {
 <template>
   <div class="page-narrow">
     <div class="card">
-      <div class="card-title">Swap</div>
+      <div class="card-title">Schimba WEBD cu USDC</div>
 
-      <!-- Sell side -->
       <div class="panel">
-        <div class="input-label">You sell</div>
+        <div class="input-label">Dau</div>
         <div class="input-row" style="margin-top:8px">
           <input
             class="token-input"
@@ -33,21 +32,19 @@ function setMaxSell() {
             v-model="swap.sellAmountStr.value"
           />
           <div class="token-badge">
-            {{ swap.sellToken.value === 'wwwebd' ? 'wWEBD' : 'USDC' }}
+            {{ swap.sellToken.value === 'wwwebd' ? 'WEBD' : 'USDC' }}
           </div>
         </div>
         <div class="balance-row" style="margin-top:8px">
-          <span>Balance: {{ formatAmount(swap.sellBalance.value, swap.sellDecimals.value, 4) }}</span>
+          <span>Sold: {{ formatAmount(swap.sellBalance.value, swap.sellDecimals.value, 4) }}</span>
           <span class="balance-max" @click="setMaxSell">MAX</span>
         </div>
       </div>
 
-      <!-- Flip arrow -->
-      <div class="swap-arrow" @click="swap.flipTokens()" style="cursor:pointer" title="Flip tokens">⇅</div>
+      <div class="swap-arrow" @click="swap.flipTokens()" style="cursor:pointer" title="Schimba sensul">&#8645;</div>
 
-      <!-- Buy side -->
       <div class="panel">
-        <div class="input-label">You receive (estimated)</div>
+        <div class="input-label">Primesc (estimativ)</div>
         <div class="input-row" style="margin-top:8px">
           <input
             class="token-input"
@@ -58,92 +55,60 @@ function setMaxSell() {
             readonly
           />
           <div class="token-badge">
-            {{ swap.sellToken.value === 'wwwebd' ? 'USDC' : 'wWEBD' }}
+            {{ swap.sellToken.value === 'wwwebd' ? 'USDC' : 'WEBD' }}
           </div>
         </div>
-        <div class="balance-row" style="margin-top:8px">
-          <span>Balance: {{ formatAmount(swap.buyBalance.value, swap.buyDecimals.value, 4) }}</span>
-        </div>
       </div>
 
-      <!-- Info rows -->
-      <div v-if="swap.buyAmountBig.value > 0n" style="margin-top:16px;display:flex;flex-direction:column;gap:4px">
-        <div class="info-row">
-          <span>Price impact</span>
-          <span :class="['info-val', swap.priceImpact.value > 5 ? 'info-val-accent' : '']"
-            :style="swap.priceImpact.value > 5 ? 'color:var(--error)' : ''">
-            {{ swap.priceImpact.value.toFixed(2) }}%
-          </span>
-        </div>
-        <div class="info-row">
-          <span>Slippage tolerance</span>
-          <span class="info-val">{{ swap.slippage.value }}%</span>
-        </div>
-        <div class="info-row">
-          <span>Min received</span>
-          <span class="info-val">
-            {{ formatAmount(
-              BigInt(Math.floor(Number(swap.buyAmountBig.value) * (1 - swap.slippage.value / 100))),
-              swap.buyDecimals.value, 6
-            ) }} {{ swap.sellToken.value === 'wwwebd' ? 'USDC' : 'wWEBD' }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Slippage -->
-      <div class="info-row" style="margin-top:12px;gap:8px;justify-content:flex-start">
-        <span style="font-size:13px;color:var(--text-dim)">Slippage:</span>
-        <button
-          v-for="pct in [0.1, 0.5, 1.0]" :key="pct"
-          :class="['btn','btn-sm','btn-outline', swap.slippage.value === pct ? 'active-slippage' : '']"
-          @click="swap.slippage.value = pct"
-          style="padding:4px 10px;font-size:12px"
-        >{{ pct }}%</button>
-      </div>
-
-      <!-- Error / Tx -->
-      <div v-if="swap.error.value" class="alert alert-error" style="margin-top:14px">{{ swap.error.value }}</div>
-      <div v-if="swap.txHash.value" class="alert alert-success" style="margin-top:14px">
-        Swap confirmed!
-        <a :href="`https://polygonscan.com/tx/${swap.txHash.value}`" target="_blank" style="margin-left:6px">View on Polygonscan ↗</a>
-      </div>
-
-      <!-- Action buttons -->
-      <div style="margin-top:20px">
-        <button v-if="!wallet.isConnected.value" class="btn btn-primary" @click="wallet.connect()">
-          Connect Wallet
+      <div style="margin-top:16px">
+        <button v-if="!wallet.isConnected.value" class="btn btn-primary" style="width:100%" @click="wallet.connect()">
+          Conecteaza Wallet
         </button>
-        <button v-else-if="wallet.isWrongNetwork.value" class="btn btn-primary" style="background:var(--warning)" @click="wallet.switchNetwork()">
-          Switch to Polygon
+        <button v-else-if="wallet.isWrongNetwork.value" class="btn btn-primary" style="width:100%;background:var(--warning)" @click="wallet.switchNetwork()">
+          Schimba pe Polygon
         </button>
         <template v-else>
           <button
             v-if="swap.needsApproval.value"
             class="btn btn-primary"
+            style="width:100%"
             :disabled="swap.loading.value || swap.sellAmountBig.value === 0n"
             @click="swap.doApprove()"
           >
             <span v-if="swap.loading.value" class="spinner"></span>
-            Approve {{ swap.sellToken.value === 'wwwebd' ? 'wWEBD' : 'USDC' }}
+            Aproba {{ swap.sellToken.value === 'wwwebd' ? 'WEBD' : 'USDC' }}
           </button>
           <button
             v-else
             class="btn btn-primary"
+            style="width:100%"
             :disabled="swap.loading.value || swap.sellAmountBig.value === 0n || swap.buyAmountBig.value === 0n"
             @click="swap.doSwap()"
           >
             <span v-if="swap.loading.value" class="spinner"></span>
-            Swap
+            Schimba
           </button>
         </template>
       </div>
+
+      <div v-if="swap.error.value" class="alert alert-error" style="margin-top:14px">{{ swap.error.value }}</div>
+      <div v-if="swap.txHash.value" class="alert alert-success" style="margin-top:14px">
+        Tranzactie confirmata!
+        <a :href="`https://polygonscan.com/tx/${swap.txHash.value}`" target="_blank" style="margin-left:6px">Vezi pe Polygonscan</a>
+      </div>
     </div>
 
-    <!-- Pool info -->
-    <div v-if="swap.reserveWWEBD.value > 0n" style="margin-top:16px" class="card">
-      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Pool reserves</div>
+    <div class="card" style="margin-top:24px">
+      <div class="card-title">Log activitate</div>
+      <div style="font-size:13px;white-space:pre-line;color:var(--text-dim)">
+        {{ swap.error.value || swap.txHash.value || 'Gata de schimb.' }}
+      </div>
+    </div>
+
+    <div v-if="swap.reserveWWEBD.value > 0n" class="card" style="margin-top:16px">
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Rezerve pool</div>
       <div class="info-row">
-        <span>wWEBD</span>
+        <span>WEBD</span>
         <span class="info-val">{{ formatAmount(swap.reserveWWEBD.value, WWWEBD_DECIMALS, 2) }}</span>
       </div>
       <div class="info-row">

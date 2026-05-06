@@ -2,11 +2,11 @@ import { ethers, network } from 'hardhat'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// USDC addresses per network
+// USDC addresses per network (empty = deploy MockUSDC)
 const USDC_ADDRESSES: Record<string, string> = {
-  polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',  // Circle native USDC on Polygon (6 dec)
-  polygonAmoy: '0x0000000000000000000000000000000000000000', // replace with testnet USDC if available
-  hardhat: '',  // deployed dynamically in tests
+  polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
+  polygonAmoy: '', // MockUSDC will be deployed
+  hardhat: '',
 }
 
 async function main() {
@@ -37,8 +37,18 @@ async function main() {
   await router.waitForDeployment()
   console.log(`   Router: ${await router.getAddress()}`)
 
+  // 3b. Deploy MockUSDC on testnet if no real USDC configured
+  let usdcAddress = USDC_ADDRESSES[networkName] || ''
+  if (!usdcAddress && networkName !== 'polygon') {
+    console.log('3b. Deploying MockUSDC (testnet only)...')
+    const MockUSDCContract = await ethers.getContractFactory('MockUSDC')
+    const mockUsdc = await MockUSDCContract.deploy(deployer.address)
+    await mockUsdc.waitForDeployment()
+    usdcAddress = await mockUsdc.getAddress()
+    console.log(`   MockUSDC: ${usdcAddress}`)
+  }
+
   // 4. Create wWEBD/USDC pair
-  const usdcAddress = USDC_ADDRESSES[networkName]
   let pairAddress = ''
   if (usdcAddress && usdcAddress !== ethers.ZeroAddress) {
     console.log('4. Creating wWEBD/USDC pair...')
@@ -47,7 +57,7 @@ async function main() {
     pairAddress = await factory.getPair(await wwebd.getAddress(), usdcAddress)
     console.log(`   Pair wWEBD/USDC: ${pairAddress}`)
   } else {
-    console.log('4. Skipping pair creation (no USDC address for this network)')
+    console.log('4. Skipping pair creation')
   }
 
   // 5. Save deployment addresses
