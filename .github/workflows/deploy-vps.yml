@@ -3,7 +3,7 @@ name: Deploy webd-dex Frontend To VPS
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
