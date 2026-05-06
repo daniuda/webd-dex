@@ -16,6 +16,8 @@ const { address, isConnected, isWrongNetwork, connecting, connect, switchNetwork
 
         <nav class="site-nav">
           <RouterLink to="/" class="nav-link">WEBD ↔ USDC</RouterLink>
+          <a href="https://webdollar.cloudns.nz" target="_blank" rel="noopener" class="nav-link">Explorer</a>
+          <a href="https://webdollar.cloudns.nz/wdexperience" target="_blank" rel="noopener" class="nav-link">WD Experience</a>
         </nav>
 
         <div style="flex-shrink:0">
@@ -42,6 +44,8 @@ const { address, isConnected, isWrongNetwork, connecting, connect, switchNetwork
         <p class="footer-copy">WebDollar ↔ USDC on Polygon · Non-custodial AMM</p>
         <div class="footer-links">
           <a href="https://webdollar.io" target="_blank" rel="noopener" class="footer-link">webdollar.io</a>
+          <a href="https://webdollar.cloudns.nz" target="_blank" rel="noopener" class="footer-link">Explorer</a>
+          <a href="https://webdollar.cloudns.nz/wdexperience" target="_blank" rel="noopener" class="footer-link">WD Experience</a>
         </div>
       </div>
     </footer>
