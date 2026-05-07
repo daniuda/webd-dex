@@ -17,6 +17,10 @@ const WEBD_TO_WEI = (amountWebd: number): bigint => {
   return BigInt(wholePart) * 10n ** 18n + BigInt(fracPart) * 10n ** 14n
 }
 
+// MATIC airdrop thresholds (Solution 1: gasless onboarding)
+const MATIC_AIRDROP_WEI = ethers.parseEther('0.05')  // send 0.05 MATIC
+const MATIC_THRESHOLD_WEI = ethers.parseEther('0.02') // only if user has < 0.02 MATIC
+
 let provider: ethers.JsonRpcProvider
 let wallet: ethers.Wallet
 let contract: ethers.Contract
@@ -45,8 +49,29 @@ function getContract(): ethers.Contract {
 }
 
 /**
+ * Solution 1: Send 0.05 MATIC to user if they have less than 0.02 MATIC.
+ * Called after every mint so first-time bridge users can pay for approve + swap gas.
+ * Non-fatal — errors are logged but do not block the mint response.
+ */
+async function airdropMaticIfNeeded(toEvmAddress: string): Promise<void> {
+  const balance = await getProvider().getBalance(toEvmAddress)
+  if (balance >= MATIC_THRESHOLD_WEI) {
+    console.log(`[mint] ${toEvmAddress} has ${ethers.formatEther(balance)} MATIC — no airdrop needed`)
+    return
+  }
+  console.log(`[mint] Airdropping 0.05 MATIC to ${toEvmAddress} (current balance: ${ethers.formatEther(balance)} MATIC)`)
+  const tx = await getWallet().sendTransaction({
+    to: toEvmAddress,
+    value: MATIC_AIRDROP_WEI,
+  })
+  const receipt = await tx.wait(1)
+  console.log(`[mint] MATIC airdrop done. txHash: ${receipt!.hash}`)
+}
+
+/**
  * Mint wWEBD pe Polygon catre adresa EVM a userului.
  * Apelata de bridge dupa confirmarea depozitului WEBD nativ.
+ * Dupa mint, trimite automat 0.05 MATIC daca userul nu are suficient pentru gas.
  */
 export async function mintWWEBD(toEvmAddress: string, amountWebd: number): Promise<string> {
   const amount = WEBD_TO_WEI(amountWebd)
@@ -55,6 +80,12 @@ export async function mintWWEBD(toEvmAddress: string, amountWebd: number): Promi
   const tx = await getContract().mint(toEvmAddress, amount)
   const receipt = await tx.wait(1)
   console.log(`[mint] Minted. txHash: ${receipt.hash}`)
+
+  // Solution 1: airdrop MATIC so user can pay for approve + swap gas
+  airdropMaticIfNeeded(toEvmAddress).catch(err => {
+    console.error(`[mint] MATIC airdrop failed (non-fatal): ${err.message}`)
+  })
+
   return receipt.hash as string
 }
 

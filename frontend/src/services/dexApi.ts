@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+import { buildSignedRequest, relayRequest } from './relayApi'
 
 const ROUTER_ADDR = import.meta.env.VITE_ROUTER_ADDRESS
 const WWWEBD_ADDR = import.meta.env.VITE_WWWEBD_ADDRESS
@@ -150,6 +151,29 @@ export async function removeLiquidity(
   const tx = await router.removeLiquidity(WWWEBD_ADDR, USDC_ADDR, lpAmount, minWWEBD, minUSDC, to, deadline)
   const receipt = await tx.wait()
   return receipt.hash
+}
+
+/**
+ * Gasless swap via EIP-2771 relay (Solution 2).
+ * User signs an EIP-712 ForwardRequest — bridge hot wallet pays MATIC.
+ * Requires: user approved Router for tokenIn (approve step still needs gas,
+ * but the MATIC airdrop on first bridge mint covers this).
+ */
+export async function relaySwap(
+  amountIn: bigint,
+  amountOutMin: bigint,
+  tokenIn: string,
+  tokenOut: string,
+  to: string,
+  signer: ethers.Signer,
+): Promise<string> {
+  const iface = new ethers.Interface(ROUTER_ABI)
+  const deadline = Math.floor(Date.now() / 1000) + 600
+  const calldata = iface.encodeFunctionData('swapExactTokensForTokens', [
+    amountIn, amountOutMin, tokenIn, tokenOut, to, deadline,
+  ])
+  const request = await buildSignedRequest(signer, ROUTER_ADDR, calldata, 300_000n)
+  return relayRequest(request)
 }
 
 export { WWWEBD_ADDR, USDC_ADDR, ROUTER_ADDR, FACTORY_ADDR }

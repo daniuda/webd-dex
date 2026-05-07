@@ -16,6 +16,7 @@ export const config = {
   // Polygon
   polygonRpc: optional('POLYGON_RPC_URL', 'https://polygon-rpc.com'),
   wwwebdAddress: optional('WWWEBD_ADDRESS', ''),
+  forwarderAddress: optional('FORWARDER_ADDRESS', ''),
   bridgeHotWalletKey: optional('BRIDGE_HOT_WALLET_PRIVATE_KEY', ''),
 
   // WEBD nativ

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "./Factory.sol";
 import "./Pair.sol";
 
@@ -10,8 +11,11 @@ import "./Pair.sol";
  * @notice User-facing interface for the DEX.
  *         Does NOT hold funds — all tokens go directly to Pair contracts.
  *         Provides: swapExactTokensForTokens, addLiquidity, removeLiquidity.
+ *         Supports EIP-2771 meta-transactions via ERC2771Context: relay calls
+ *         execute() on MinimalForwarder, Router reads the real user address
+ *         via _msgSender() instead of msg.sender.
  */
-contract Router {
+contract Router is ERC2771Context {
     address public immutable factory;
 
     modifier ensure(uint256 deadline) {
@@ -19,7 +23,7 @@ contract Router {
         _;
     }
 
-    constructor(address _factory) {
+    constructor(address _factory, address _trustedForwarder) ERC2771Context(_trustedForwarder) {
         factory = _factory;
     }
 
@@ -110,7 +114,7 @@ contract Router {
         require(amountOut >= amountOutMin, "Router: INSUFFICIENT_OUTPUT_AMOUNT");
 
         address pair = _getPair(tokenIn, tokenOut);
-        IERC20(tokenIn).transferFrom(msg.sender, pair, amountIn);
+        IERC20(tokenIn).transferFrom(_msgSender(), pair, amountIn);
 
         address token0 = Pair(pair).token0();
         (uint256 amount0Out, uint256 amount1Out) = tokenIn == token0
@@ -164,8 +168,8 @@ contract Router {
         }
 
         address pair = _getPair(tokenA, tokenB);
-        IERC20(tokenA).transferFrom(msg.sender, pair, amountA);
-        IERC20(tokenB).transferFrom(msg.sender, pair, amountB);
+        IERC20(tokenA).transferFrom(_msgSender(), pair, amountA);
+        IERC20(tokenB).transferFrom(_msgSender(), pair, amountB);
         liquidity = Pair(pair).mint(to);
     }
 
@@ -189,7 +193,7 @@ contract Router {
         uint256 deadline
     ) external ensure(deadline) returns (uint256 amountA, uint256 amountB) {
         address pair = _getPair(tokenA, tokenB);
-        IERC20(pair).transferFrom(msg.sender, pair, liquidity);
+        IERC20(pair).transferFrom(_msgSender(), pair, liquidity);
         (uint256 amount0, uint256 amount1) = Pair(pair).burn(to);
 
         address token0 = Pair(pair).token0();

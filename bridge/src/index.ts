@@ -4,6 +4,7 @@ import { config } from './config.js'
 import { initDb, createRequest, getRequest, getRecentRequests } from './db.js'
 import { startMonitor, stopMonitor } from './monitor.js'
 import { getWWEBDBalance } from './mint.js'
+import { getNonce, relayTransaction, type RelayRequest } from './relay.js'
 
 const app = express()
 app.use(express.json())
@@ -150,6 +151,58 @@ app.get('/api/bridge/info', async (_req, res) => {
     feeWebd: config.bridgeTxFeeWebd,
     bridgeHotWalletBalance: bridgeBalance,
   })
+})
+
+// ─── Meta-tx relay (EIP-2771 / Solution 2) ───────────────────────────────────
+
+/**
+ * GET /api/relay/nonce/:address
+ * Returns the current forwarder nonce for a user (needed for EIP-712 signing).
+ */
+app.get('/api/relay/nonce/:address', async (req, res) => {
+  if (!config.forwarderAddress) {
+    res.status(503).json({ error: 'Relay not configured (FORWARDER_ADDRESS not set)' }); return
+  }
+  try {
+    const nonce = await getNonce(req.params.address)
+    res.json({ nonce })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+/**
+ * POST /api/relay
+ * Body: { from, to, value?, gas?, deadline, data, signature }
+ *
+ * Executes a signed EIP-2771 meta-transaction on behalf of the user.
+ * Bridge hot wallet pays MATIC; Router sees the real user via _msgSender().
+ */
+app.post('/api/relay', async (req, res) => {
+  if (!config.forwarderAddress) {
+    res.status(503).json({ error: 'Relay not configured (FORWARDER_ADDRESS not set)' }); return
+  }
+  try {
+    const body = req.body as Partial<RelayRequest>
+    if (!body.from || !body.to || !body.data || !body.signature || !body.deadline) {
+      res.status(400).json({ error: 'Câmpuri lipsă: from, to, data, signature, deadline' }); return
+    }
+    if (!/^0x[a-fA-F0-9]{40}$/.test(body.from) || !/^0x[a-fA-F0-9]{40}$/.test(body.to)) {
+      res.status(400).json({ error: 'from / to trebuie să fie adrese EVM valide' }); return
+    }
+    const txHash = await relayTransaction({
+      from: body.from,
+      to: body.to,
+      value: body.value ?? '0',
+      gas: body.gas ?? '300000',
+      deadline: body.deadline,
+      data: body.data,
+      signature: body.signature,
+    })
+    res.json({ ok: true, txHash })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
 })
 
 // ─── Start ────────────────────────────────────────────────────────────────────
