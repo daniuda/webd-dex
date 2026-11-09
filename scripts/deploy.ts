@@ -24,11 +24,37 @@ async function main() {
   console.log(`   Factory: ${await factory.getAddress()}`)
 
   // 2. Deploy wWEBD
+  // ADMIN_ADDRESS (optional env var): the DEFAULT_ADMIN_ROLE/PAUSER_ROLE holder.
+  // Defaults to the deployer, which is fine for testnet but should be a multisig
+  // (e.g. a Gnosis Safe) before any mainnet deploy with real funds — see
+  // docs/superpowers/specs/2026-11-09-webd-dex-legal-risk-design.md.
+  // BRIDGE_HOT_WALLET_ADDRESS (optional env var): gets MINTER_ROLE only, capped
+  // on-chain by setMintCaps below. Defaults to the deployer for local/testnet runs
+  // where there is no separate bridge process yet.
+  const adminAddress = process.env.ADMIN_ADDRESS || deployer.address
+  const bridgeHotWalletAddress = process.env.BRIDGE_HOT_WALLET_ADDRESS || deployer.address
+
   console.log('2. Deploying wWEBD...')
   const WWEBDContract = await ethers.getContractFactory('wWEBD')
-  const wwebd = await WWEBDContract.deploy(deployer.address)
+  const wwebd = await WWEBDContract.deploy(adminAddress)
   await wwebd.waitForDeployment()
-  console.log(`   wWEBD: ${await wwebd.getAddress()}`)
+  console.log(`   wWEBD: ${await wwebd.getAddress()} (admin: ${adminAddress})`)
+
+  if (bridgeHotWalletAddress.toLowerCase() !== adminAddress.toLowerCase()) {
+    console.log(`   Granting MINTER_ROLE to bridge hot wallet ${bridgeHotWalletAddress}...`)
+    await (await wwebd.grantRole(await wwebd.MINTER_ROLE(), bridgeHotWalletAddress)).wait()
+    console.log(`   Revoking MINTER_ROLE from deployer (${deployer.address})...`)
+    await (await wwebd.revokeRole(await wwebd.MINTER_ROLE(), adminAddress)).wait()
+  }
+
+  // On-chain mint caps: per-tx cap matches the bridge's own BRIDGE_MAX_AMOUNT_WEBD
+  // default (10000 WEBD); daily cap is a coarser backstop against a fully
+  // compromised hot wallet. Both are wei-denominated (1 WEBD = 1e18 wei of wWEBD).
+  // Admin (not the hot wallet) can raise/lower these later via setMintCaps().
+  const maxMintPerTx = ethers.parseEther(process.env.MAX_MINT_PER_TX_WEBD || '10000')
+  const maxMintPerDay = ethers.parseEther(process.env.MAX_MINT_PER_DAY_WEBD || '100000')
+  console.log(`   Setting mint caps: per-tx=${ethers.formatEther(maxMintPerTx)} wWEBD, per-day=${ethers.formatEther(maxMintPerDay)} wWEBD`)
+  await (await wwebd.setMintCaps(maxMintPerTx, maxMintPerDay)).wait()
 
   // 3. Deploy MinimalForwarder (EIP-2771 gasless meta-tx support)
   console.log('3. Deploying MinimalForwarder...')

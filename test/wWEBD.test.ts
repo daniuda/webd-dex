@@ -87,4 +87,59 @@ describe('wWEBD', () => {
     await token.connect(admin).mint(user.address, expectedWei)
     expect(await token.balanceOf(user.address)).to.equal(ONE_WEBD)
   })
+
+  describe('limite de mint on-chain (protectie hot wallet compromis)', () => {
+    it('fara capace setate, mintul e nelimitat (comportament implicit, caps=0)', async () => {
+      await token.connect(admin).mint(user.address, ONE_WEBD * 1_000_000n)
+      expect(await token.balanceOf(user.address)).to.equal(ONE_WEBD * 1_000_000n)
+    })
+
+    it('respinge mintul peste capacul per-tranzactie', async () => {
+      await token.connect(admin).setMintCaps(ONE_WEBD * 100n, 0)
+      await expect(token.connect(admin).mint(user.address, ONE_WEBD * 101n))
+        .to.be.revertedWith('wWEBD: amount exceeds per-tx cap')
+      await expect(token.connect(admin).mint(user.address, ONE_WEBD * 100n)).to.not.be.reverted
+    })
+
+    it('respinge mintul peste capacul zilnic cumulat, chiar in tranzactii mici', async () => {
+      await token.connect(admin).setMintCaps(0, ONE_WEBD * 100n)
+      await token.connect(admin).mint(user.address, ONE_WEBD * 60n)
+      await token.connect(admin).mint(user.address, ONE_WEBD * 30n)
+      await expect(token.connect(admin).mint(user.address, ONE_WEBD * 20n))
+        .to.be.revertedWith('wWEBD: amount exceeds daily cap')
+    })
+
+    it('reseteaza fereastra zilnica dupa 24h', async () => {
+      await token.connect(admin).setMintCaps(0, ONE_WEBD * 100n)
+      await token.connect(admin).mint(user.address, ONE_WEBD * 100n)
+      await expect(token.connect(admin).mint(user.address, ONE_WEBD))
+        .to.be.revertedWith('wWEBD: amount exceeds daily cap')
+
+      await ethers.provider.send('evm_increaseTime', [24 * 60 * 60 + 1])
+      await ethers.provider.send('evm_mine', [])
+
+      await expect(token.connect(admin).mint(user.address, ONE_WEBD * 100n)).to.not.be.reverted
+    })
+
+    it('doar admin (DEFAULT_ADMIN_ROLE) poate schimba capacele, nu minter-ul simplu', async () => {
+      await token.connect(admin).grantRole(MINTER_ROLE, bridge.address)
+      await expect(token.connect(bridge).setMintCaps(1n, 1n))
+        .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+    })
+
+    it('pause() blocheaza mintul; doar PAUSER_ROLE poate pune/scoate pauza', async () => {
+      const PAUSER_ROLE = ethers.keccak256(ethers.toUtf8Bytes('PAUSER_ROLE'))
+      expect(await token.hasRole(PAUSER_ROLE, admin.address)).to.be.true
+
+      await token.connect(admin).pause()
+      await expect(token.connect(admin).mint(user.address, ONE_WEBD))
+        .to.be.revertedWithCustomError(token, 'EnforcedPause')
+
+      await expect(token.connect(user).unpause())
+        .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+
+      await token.connect(admin).unpause()
+      await expect(token.connect(admin).mint(user.address, ONE_WEBD)).to.not.be.reverted
+    })
+  })
 })

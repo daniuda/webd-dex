@@ -27,8 +27,11 @@ describe('Router', () => {
     const FactoryF = await ethers.getContractFactory('Factory')
     factory = (await FactoryF.deploy(owner.address)) as Factory
 
+    const ForwarderF = await ethers.getContractFactory('MinimalForwarder')
+    const forwarder = await ForwarderF.deploy()
+
     const RouterF = await ethers.getContractFactory('Router')
-    router = (await RouterF.deploy(await factory.getAddress())) as Router
+    router = (await RouterF.deploy(await factory.getAddress(), await forwarder.getAddress())) as Router
 
     // Mint tokens
     await wwebd.mint(lp.address, WEBD_LIQ * 2n)
